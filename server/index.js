@@ -104,19 +104,23 @@ function createServer() {
           throw response;
         }
       })
-      .then(json => {
+      .then(results => {
 
         // get all the results data in right format
-        var passages = json.passages;
+        var passages = utils.formatData(results.passages);
         // const util = require('util');
         console.log('++++++++++++ DISCO RESULTS ++++++++++++++++++++');
         // console.log(util.inspect(passages, false, null));
         console.log('length: ' + passages.length);
-        passages = utils.formatData(passages);
 
         res.render('index',
           {
             data: passages,
+            entities: results,
+            categories: results,
+            concepts: results,
+            keywords: results,
+            entityTypes: results,
             searchQuery,
             numMatches: passages.length,
             error: null
@@ -151,12 +155,16 @@ function createServer() {
           // console.log(util.inspect(results, false, null));
       
           // get all the results data in right format
-          var passages = results.passages;
-          passages = utils.formatData(passages);
+          var passages = utils.formatData(results.passages);
 
           res.render('index', { 
-            data: passages, 
-            numMatches: passages.results.length
+            data: passages,
+            entities: results,
+            categories: results,
+            concepts: results,
+            keywords: results,
+            entityTypes: results,
+            numMatches: passages.length
           });
     
           resolve(passages);

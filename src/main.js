@@ -20,7 +20,12 @@ import PropTypes from 'prop-types';
 import queryString from 'query-string';
 import Matches from './Matches';
 import SearchField from './SearchField';
-import { Grid, Dimmer, Header, Loader, Container } from 'semantic-ui-react';
+import EntitiesList from './EntitiesList';
+import CategoriesList from './CategoriesList';
+import ConceptsList from './ConceptsList';
+import KeywordsList from './KeywordsList';
+import EntityTypesList from './EntityTypesList';
+import { Grid, Dimmer, Header, Loader, Accordion, Icon } from 'semantic-ui-react';
 const utils = require('../lib/utils');
 
 /**
@@ -34,6 +39,11 @@ class Main extends React.Component {
     const { 
       // query data
       data,
+      entities,
+      categories,
+      concepts,
+      keywords,
+      entityTypes,
       numMatches,
       error,
       // query params
@@ -44,11 +54,17 @@ class Main extends React.Component {
     this.state = {
       // query data
       data: data,   // data should already be formatted
+      entities: entities && parseEntities(entities),
+      categories: categories && parseCategories(categories),
+      concepts: concepts && parseConcepts(concepts),
+      keywords: keywords && parseKeywords(keywords),
+      entityTypes: entityTypes && parseEntityTypes(entityTypes),
       numMatches: numMatches || 0,
       loading: false,
       error: error,
       // query params
-      searchQuery: searchQuery || ''
+      searchQuery: searchQuery || '',
+      activeFilterIndex: 0,             // which filter index is expanded/active
     };
   }
 
@@ -101,8 +117,8 @@ class Main extends React.Component {
         }
       })
       .then(json => {
-        var passages = json.passages;
-        passages = utils.formatData(passages);
+        var passages = parsePassages(json);
+        passages = utils.formatData(passages.results);
         
         console.log('+++ DISCO RESULTS +++');
         // const util = require('util');
@@ -111,6 +127,11 @@ class Main extends React.Component {
       
         this.setState({
           data: passages,
+          entities: parseEntities(json),
+          categories: parseCategories(json),
+          concepts: parseConcepts(json),
+          keywords: parseKeywords(json),
+          entityTypes: parseEntityTypes(json),
           loading: false,
           numMatches: passages.length,
           error: null
@@ -150,10 +171,97 @@ class Main extends React.Component {
   }
 
   /**
+   * handleAccordionClick - (callback function)
+   * User has selected one of the
+   * filter boxes to expand and show values for.
+   */
+  handleAccordionClick(e, titleProps) {
+    const { index } = titleProps;
+    const { activeFilterIndex } = this.state;
+    const newIndex = activeFilterIndex === index ? -1 : index;
+    this.setState({ activeFilterIndex: newIndex });
+  }
+
+  /**
+   * getEntities - return entities to be rendered.
+   */
+  getEntitiesList() {
+    const { entities } = this.state;
+    if (!entities) {
+      return null;
+    }
+    return (
+      <EntitiesList
+        entities={entities.results}
+      />
+    );
+  }
+
+  /**
+   * getCategoriesList - return categories to be rendered.
+   */
+  getCategoriesList() {
+    const { categories } = this.state;
+    if (!categories) {
+      return null;
+    }
+    return (
+      <CategoriesList
+        categories={categories.results}
+      />
+    );
+  }
+
+  /**
+   * getConceptsList - return concepts to be rendered.
+   */
+  getConceptsList() {
+    const { concepts } = this.state;
+    if (!concepts) {
+      return null;
+    }
+    return (
+      <ConceptsList
+        concepts={concepts.results}
+      />
+    );
+  }
+
+  /**
+   * getKeywordsList - return keywords to be rendered.
+   */
+  getKeywordsList() {
+    const { keywords } = this.state;
+    if (!keywords) {
+      return null;
+    }
+    return (
+      <KeywordsList
+        keywords={keywords.results}
+      />
+    );
+  }
+
+  /**
+   * getEntityTypeFilter - return entity types to be rendered.
+   */
+  getEntityTypesList() {
+    const { entityTypes } = this.state;
+    if (!entityTypes) {
+      return null;
+    }
+    return (
+      <EntityTypesList
+        entityTypes={entityTypes.results}
+      />
+    );
+  }
+
+  /**
    * render - return all the home page object to be rendered.
    */
   render() {
-    const { loading, data, error, searchQuery } = this.state;
+    const { loading, data, error, searchQuery, activeFilterIndex } = this.state;
 
     return (
       <Grid celled className='search-grid'>
@@ -169,13 +277,79 @@ class Main extends React.Component {
           </Grid.Column>
         </Grid.Row>
 
-        {/* Results Panel */}
-
         <Grid.Row className='matches-grid-row'>
+
+          <Grid.Column width={4}>
+            <Header as='h2' block textAlign='left'>
+              <Header.Content>
+                Enrichments
+              </Header.Content>
+            </Header>
+            <Accordion styled>
+              <Accordion.Title
+                active={activeFilterIndex == utils.ENTITY_DATA_INDEX}
+                index={utils.ENTITY_DATA_INDEX}
+                onClick={this.handleAccordionClick.bind(this)}>
+                <Icon name='dropdown' />
+                Entities
+              </Accordion.Title>
+              <Accordion.Content active={activeFilterIndex == utils.ENTITY_DATA_INDEX}>
+                {this.getEntitiesList()}
+              </Accordion.Content>
+            </Accordion>
+            <Accordion styled>
+              <Accordion.Title
+                active={activeFilterIndex == utils.CATEGORY_DATA_INDEX}
+                index={utils.CATEGORY_DATA_INDEX}
+                onClick={this.handleAccordionClick.bind(this)}>
+                <Icon name='dropdown' />
+                Categories
+              </Accordion.Title>
+              <Accordion.Content active={activeFilterIndex == utils.CATEGORY_DATA_INDEX}>
+                {this.getCategoriesList()}
+              </Accordion.Content>
+            </Accordion>
+            <Accordion styled>
+              <Accordion.Title
+                active={activeFilterIndex == utils.CONCEPT_DATA_INDEX}
+                index={utils.CONCEPT_DATA_INDEX}
+                onClick={this.handleAccordionClick.bind(this)}>
+                <Icon name='dropdown' />
+                Concepts
+              </Accordion.Title>
+              <Accordion.Content active={activeFilterIndex == utils.CONCEPT_DATA_INDEX}>
+                {this.getConceptsList()}
+              </Accordion.Content>
+            </Accordion>
+            <Accordion styled>
+              <Accordion.Title
+                active={activeFilterIndex == utils.KEYWORD_DATA_INDEX}
+                index={utils.KEYWORD_DATA_INDEX}
+                onClick={this.handleAccordionClick.bind(this)}>
+                <Icon name='dropdown' />
+                Keywords
+              </Accordion.Title>
+              <Accordion.Content active={activeFilterIndex == utils.KEYWORD_DATA_INDEX}>
+                {this.getKeywordsList()}
+              </Accordion.Content>
+            </Accordion>
+            <Accordion styled>
+              <Accordion.Title
+                active={activeFilterIndex == utils.ENTITY_TYPE_DATA_INDEX}
+                index={utils.ENTITY_TYPE_DATA_INDEX}
+                onClick={this.handleAccordionClick.bind(this)}>
+                <Icon name='dropdown' />
+                Entity Types
+              </Accordion.Title>
+              <Accordion.Content active={activeFilterIndex == utils.ENTITY_TYPE_DATA_INDEX}>
+                {this.getEntityTypesList()}
+              </Accordion.Content>
+            </Accordion>
+          </Grid.Column>
 
           {/* Results */}
 
-          <Grid.Column width={16}>
+          <Grid.Column width={12}>
             <Grid.Row>
               {loading ? (
                 <div className="results">
@@ -210,6 +384,53 @@ class Main extends React.Component {
   }
 }
 
+const parsePassages = data => ({
+  rawResponse: Object.assign({}, data),
+  // sentiment: data.aggregations[0].results.reduce((accumulator, result) =>
+  //   Object.assign(accumulator, { [result.key]: result.matching_results }), {}),
+  results: data.passages
+});
+
+/**
+ * parseEntities - convert raw search results into collection of entities.
+ */
+const parseEntities = data => ({
+  rawResponse: Object.assign({}, data),
+  results: data.aggregations[utils.ENTITY_DATA_INDEX].results
+});
+
+/**
+ * parseCategories - convert raw search results into collection of categories.
+ */
+const parseCategories = data => ({
+  rawResponse: Object.assign({}, data),
+  results: data.aggregations[utils.CATEGORY_DATA_INDEX].results
+});
+
+/**
+ * parseConcepts - convert raw search results into collection of concepts.
+ */
+const parseConcepts = data => ({
+  rawResponse: Object.assign({}, data),
+  results: data.aggregations[utils.CONCEPT_DATA_INDEX].results
+});
+
+/**
+ * parseKeywords - convert raw search results into collection of keywords.
+ */
+const parseKeywords = data => ({
+  rawResponse: Object.assign({}, data),
+  results: data.aggregations[utils.KEYWORD_DATA_INDEX].results
+});
+
+/**
+ * parseEntityTypes - convert raw search results into collection of entity types.
+ */
+const parseEntityTypes = data => ({
+  rawResponse: Object.assign({}, data),
+  results: data.aggregations[utils.ENTITY_TYPE_DATA_INDEX].results
+});
+
 /**
  * scrollToMain - scroll window to show 'main' rendered object.
  */
@@ -223,6 +444,11 @@ function scrollToMain() {
 // type check to ensure we are called correctly
 Main.propTypes = {
   data: PropTypes.object,
+  entities: PropTypes.object,
+  categories: PropTypes.object,
+  concepts: PropTypes.object,
+  keywords: PropTypes.object,
+  entityTypes: PropTypes.object,
   searchQuery: PropTypes.string,
   numMatches: PropTypes.number,
   error: PropTypes.object
